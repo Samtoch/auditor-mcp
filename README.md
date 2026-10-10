@@ -48,7 +48,7 @@ uv run ruff format .
 uv run mcp dev dev.py
 ```
 
-## Claude Desktop config
+## Claude Desktop config (this is the window equivalent)
 
 ```json
 "auditor": {
