@@ -9,7 +9,7 @@ class IdentitySettings:
     issuer: str # "https://login.microsoftonline.com/company-a-tenant/v2.0"
     audience: str # "api://moko"
     allowed_organization_ids: tuple[str, ...] # "company-a-tenant"
-    jwks_uri: str
+    jwks_uri: str | None = None  # Discover automatically when omitted.
     
     
 @dataclass(frozen=True)

@@ -30,7 +30,10 @@ Notes:
     action, resource, and policy decision without logging raw tokens.
 """
 
+import json
+from urllib.error import URLError
 from urllib.parse import urlparse
+from urllib.request import urlopen
 
 import jwt
 
@@ -47,17 +50,42 @@ class IdentityService:
     def __init__(
         self, settings: IdentitySettings, token_verifier: jwt.PyJWKClient | None = None
     ) -> None:
+        if not jwt.algorithms.has_crypto:
+            raise RuntimeError("JWT cryptography support is required.")
+
         self._settings = settings
         self._validate_settings()
-        self._token_verifier = (
-            token_verifier if token_verifier is not None else jwt.PyJWKClient(settings.jwks_uri)
-        )
+        if token_verifier is not None:
+            self._token_verifier = token_verifier
+        else:
+            jwks_uri = settings.jwks_uri or self._discover_jwks_uri()
+            self._token_verifier = jwt.PyJWKClient(jwks_uri)
+
+    def _discover_jwks_uri(self) -> str:
+        """Discover signing keys once at startup from the trusted issuer.
+
+        Appending this path supports the tenant-specific Entra v2 issuer
+        used by this service. Entra v1 discovery needs separate configuration.
+        """
+        discovery_url = self._settings.issuer.rstrip("/") + "/.well-known/openid-configuration"
+        try:
+            with urlopen(discovery_url, timeout=10) as response:
+                if urlparse(response.geturl()).scheme != "https":
+                    raise ValueError("Discovery must use HTTPS.")
+                metadata = json.load(response)
+        except (URLError, TimeoutError, ValueError) as exc:
+            raise RuntimeError("Unable to load the provider's OpenID configuration.") from exc
+
+        if not isinstance(metadata, dict) or metadata.get("issuer") != self._settings.issuer:
+            raise ValueError("Discovery issuer does not match the configured trusted issuer.")
+        jwks_uri = metadata.get("jwks_uri")
+        if not isinstance(jwks_uri, str) or not jwks_uri:
+            raise ValueError("Discovery must provide a nonempty jwks_uri.")
+        self._validate_jwks_uri(jwks_uri)
+        return jwks_uri
 
     def validate_token(self, access_token: str) -> VerifiedIdentity:
         """Pseudocode for authenticating one incoming access token."""
-
-        if not jwt.algorithms.has_crypto:
-            raise RuntimeError("JWT cryptography support is required.")
 
         # 1. Reject a missing or empty token with an authentication error.
         #    The HTTP layer translates authentication errors into a 401.
@@ -127,17 +155,25 @@ class IdentityService:
         """Require explicit trust settings before attempting verification."""
         if not self._settings.issuer.strip():
             raise ValueError("Identity issuer must be configured.")
+        issuer_url = urlparse(self._settings.issuer)
+        if issuer_url.scheme != "https" or not issuer_url.hostname:
+            raise ValueError("Identity issuer must be a trusted HTTPS URL.")
         if not self._settings.audience.strip():
             raise ValueError("Identity audience must be configured.")
-        jwks_url = urlparse(self._settings.jwks_uri)
-        if jwks_url.scheme != "https" or not jwks_url.hostname:
-            raise ValueError("JWKS URI must be a configured HTTPS signing-keys URL.")
-        if ".well-known/openid-configuration" in jwks_url.path:
-            raise ValueError("Use jwks_uri from discovery, not the OpenID configuration URL.")
+        if self._settings.jwks_uri is not None:
+            self._validate_jwks_uri(self._settings.jwks_uri)
         if not self._settings.allowed_organization_ids:
             raise ValueError("At least one allowed organization must be configured.")
         if any(not org_id.strip() for org_id in self._settings.allowed_organization_ids):
             raise ValueError("Allowed organization IDs must not be blank.")
+
+    @staticmethod
+    def _validate_jwks_uri(jwks_uri: str) -> None:
+        jwks_url = urlparse(jwks_uri)
+        if jwks_url.scheme != "https" or not jwks_url.hostname:
+            raise ValueError("JWKS URI must be a configured HTTPS signing-keys URL.")
+        if ".well-known/openid-configuration" in jwks_url.path:
+            raise ValueError("Use jwks_uri from discovery, not the OpenID configuration URL.")
 
     def _verify_and_decode_token(self, access_token: str) -> dict[str, object]:
         """Return verified claims; propagate PyJWT errors on invalid tokens.
@@ -146,11 +182,6 @@ class IdentityService:
         provider integration. The configured JWKS client is reused so its
         key cache can handle subsequent requests and key rotation.
         """
-        if not access_token or not access_token.strip():
-            raise ValueError("Access token is required.")
-        if not jwt.algorithms.has_crypto:
-            raise RuntimeError("JWT cryptography support is required.")
-
         signing_key = self._select_provider().get_signing_key_from_jwt(access_token)
         return jwt.decode(
             access_token,
