@@ -7,7 +7,7 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from auditor_mcp.models import IdentitySettings
+from auditor_mcp.models import IdentitySettings, VerifiedIdentity
 from auditor_mcp.services.identity_service import IdentityService
 
 
@@ -75,7 +75,24 @@ def test_wrong_algorithm(verification):
         service._verify_and_decode_token(token)
 
 
-def test_public_method_stops_before_identity_mapping(verification):
+def test_public_method_returns_verified_identity(verification):
     service, key, claims = verification
-    with pytest.raises(NotImplementedError, match="Identity mapping"):
-        service.validate_token(jwt.encode(claims, key, algorithm="RS256"))
+    claims.update(
+        ver="2.0",
+        tid="org-a",
+        azp="client-a",
+        scp="audit.read audit.write",
+        roles=["reader"],
+    )
+    identity = service.validate_token(jwt.encode(claims, key, algorithm="RS256"))
+    assert identity == VerifiedIdentity(
+        provider="entra",
+        issuer=claims["iss"],
+        subject="user-a",
+        organization_id="org-a",
+        client_id="client-a",
+        principal_type="user",
+        authorization_mode="delegated",
+        roles=("reader",),
+        scopes=("audit.read", "audit.write"),
+    )

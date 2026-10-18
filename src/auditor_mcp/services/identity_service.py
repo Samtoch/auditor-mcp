@@ -105,7 +105,7 @@ class IdentityService:
 
         # 4. Verify the JWT using the configured provider's signing keys.
         #    Steps 5-7 will map the returned claims into VerifiedIdentity.
-        self._verify_and_decode_token(access_token)
+        claim = self._verify_and_decode_token(access_token)
 
         # 5. Normalize the verified provider-specific claims:
         #    - subject: the principal's identifier within this issuer
@@ -116,11 +116,13 @@ class IdentityService:
         #      provider's documented claims and trusted configuration
         #    - roles / scopes: from verified claims or trusted mappings
         #    Reject tokens that cannot establish the required identity.
-        #
+        identity = self._map_verified_claims(claim)
+
         # 6. Confirm the organization is allowed by server configuration.
         #    Keep the issuer and subject together when identifying a
         #    principal. Never substitute identity from tool arguments.
-        #
+       
+        self._verify_organization(identity)
         # 7. Return VerifiedIdentity(
         #        provider=configured_provider.name,
         #        issuer=verified_issuer,
@@ -132,12 +134,62 @@ class IdentityService:
         #        roles=verified_roles,
         #        scopes=verified_scopes,
         #    )
-        #
+        return identity
         # After authentication, authorization checks whether this identity
         # may perform the requested action on the requested resource.
         # Never log the raw access token.
-        raise NotImplementedError(
-            "Identity mapping and organization authorization are not implemented."
+
+    @staticmethod
+    def _map_verified_claims(claims: dict[str, object]) -> VerifiedIdentity:
+        """Normalize already verified Entra v2 claims without granting access."""
+        def required_string(name: str) -> str:
+            value = claims.get(name)
+            if not isinstance(value, str) or not value.strip():
+                raise jwt.InvalidTokenError(f"Identity claim {name} must be a nonblank string.")
+            return value
+
+        if claims.get("ver") != "2.0":
+            raise jwt.InvalidTokenError("Identity mapping supports Entra v2 tokens only.")
+
+        issuer = required_string("iss")
+        subject = required_string("sub")
+        organization_id = required_string("tid")
+        client_id = required_string("azp")
+        roles = claims.get("roles", [])
+        if not isinstance(roles, list) or any(
+            not isinstance(role, str) or not role.strip() for role in roles
+        ):
+            raise jwt.InvalidTokenError("Identity claim roles must be a list of nonblank strings.")
+
+        if "scp" in claims:
+            scopes = tuple(required_string("scp").split())
+            if claims.get("idtyp") not in (None, "user"):
+                raise jwt.InvalidTokenError("Delegated scopes conflict with the identity type.")
+            return VerifiedIdentity(
+                provider="entra",
+                issuer=issuer,
+                subject=subject,
+                organization_id=organization_id,
+                client_id=client_id,
+                principal_type="user",
+                authorization_mode="delegated",
+                roles=tuple(roles),
+                scopes=scopes,
+            )
+
+        # Roles alone do not prove app-only access: users can have roles too.
+        if claims.get("idtyp") != "app":
+            raise jwt.InvalidTokenError("App-only identity requires the verified idtyp=app claim.")
+        return VerifiedIdentity(
+            provider="entra",
+            issuer=issuer,
+            subject=subject,
+            organization_id=organization_id,
+            client_id=client_id,
+            principal_type="workload",
+            authorization_mode="app_only",
+            roles=tuple(roles),
+            scopes=(),
         )
 
     def _select_provider(self) -> jwt.PyJWKClient:
@@ -191,3 +243,10 @@ class IdentityService:
             issuer=self._settings.issuer,
             options={"require": ["aud", "iss", "exp", "sub"]},
         )
+        
+    def _verify_organization(self, identity: VerifiedIdentity) -> None:
+        """Reject identities from organizations outside the configured allowlist."""
+         
+        if identity.organization_id not in self._settings.allowed_organization_ids:
+            raise ValueError("Organization is not allowed.")
+        
