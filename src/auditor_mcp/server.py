@@ -10,8 +10,20 @@ from auditor_mcp.services import AuditService
 from auditor_mcp.storage import JsonlAuditRepository
 from auditor_mcp.tools import register_audit_tools
 
+# Identity 
+from auditor_mcp.models import IdentitySettings
+from auditor_mcp.services.identity_service import IdentityService
+
 logger = logging.getLogger(__name__)
 
+# this is from the database
+identity_settings = IdentitySettings(
+    issuer="https://login.microsoftonline.com/<Tenant-id>/v2.0",
+    audience="client-id",
+    allowed_organization_ids=("<Tenant-id>",),
+)
+
+access_token = "test-one"
 
 def build_instructions(word_limit: int) -> str:
     """Server-level instructions that clients pass to the model."""
@@ -33,13 +45,19 @@ def create_server(settings: Settings | None = None) -> MCPServer:
 
     repository = JsonlAuditRepository(settings.log_file)
     service = AuditService(repository, word_limit=settings.word_limit)
-
+    identity_service = IdentityService(identity_settings)
+    
+    identity = identity_service.validate_token(access_token)
+    
+    print(identity)
     mcp = MCPServer(
         settings.server_name,
         version=__version__,
         instructions=build_instructions(settings.word_limit),
     )
-    register_audit_tools(mcp, service)
+    
+    if not identity: 
+        register_audit_tools(mcp, service)
 
     logger.info("Audit log: %s", repository.path)
     return mcp

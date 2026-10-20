@@ -116,6 +116,7 @@ class IdentityService:
         #      provider's documented claims and trusted configuration
         #    - roles / scopes: from verified claims or trusted mappings
         #    Reject tokens that cannot establish the required identity.
+        print("claim :", claim)
         identity = self._map_verified_claims(claim)
 
         # 6. Confirm the organization is allowed by server configuration.
