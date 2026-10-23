@@ -10,7 +10,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
-from auditor_mcp.models import AuditEntry, Turn
+from auditor_mcp.models.audit import AuditEntry, Turn
 from auditor_mcp.services import AuditService
 
 
