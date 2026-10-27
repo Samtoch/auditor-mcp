@@ -14,6 +14,9 @@ from auditor_mcp.tools import register_audit_tools
 from auditor_mcp.models import IdentitySettings
 from auditor_mcp.services.identity_service import IdentityService
 
+# Database
+from auditor_mcp.storage import PostgresClient
+
 logger = logging.getLogger(__name__)
 
 # this is from the database
