@@ -6,16 +6,11 @@ from mcp.server.mcpserver import MCPServer
 
 from app import __version__
 from app.config import Settings
-from app.services import AuditService
-from app.storage import JsonlAuditRepository
 from app.mcp.tools import register_audit_tools
-
-# Identity 
 from app.models import IdentitySettings
+from app.services import AuditService
 from app.services.identity_service import IdentityService
-
-# Database
-from app.storage import PostgresClient
+from app.storage import JsonlAuditRepository
 
 logger = logging.getLogger(__name__)
 
