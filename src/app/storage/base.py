@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from auditor_mcp.models import AuditEntry
+from app.models import AuditEntry
 
 
 class AuditRepository(Protocol):

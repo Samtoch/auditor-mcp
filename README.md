@@ -13,7 +13,7 @@ Entries are appended to `logs/audit.jsonl`, one JSON object per line.
 auditor-mcp/
 ├── pyproject.toml           project metadata, dependencies, tool config
 ├── dev.py                   entry file for the MCP Inspector (mcp dev)
-├── src/auditor_mcp/
+├── src/app/
 │   ├── __main__.py          entry point: `uv run auditor-mcp`
 │   ├── api/                 reserved for website-facing API routes and app setup
 │   ├── mcp/

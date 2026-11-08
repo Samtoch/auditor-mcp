@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import psycopg2
 import pytest
 
-from auditor_mcp.storage.postgres import PostgresClient
+from app.storage.postgres import PostgresClient
 
 
 @pytest.fixture
@@ -19,7 +19,7 @@ def client(tmp_path, monkeypatch):
 
 def test_lazy_connection_and_reuse(client):
     conn = MagicMock(closed=0)
-    with patch("auditor_mcp.storage.postgres.psycopg2.connect", return_value=conn) as connect:
+    with patch("app.storage.postgres.psycopg2.connect", return_value=conn) as connect:
         connect.assert_not_called()
         with client.session():
             pass
@@ -39,7 +39,7 @@ def test_reconnects_before_session(client, closed):
     stale.cursor.side_effect = psycopg2.OperationalError("disconnected")
     client._connection = stale
     fresh = MagicMock(closed=0)
-    with patch("auditor_mcp.storage.postgres.psycopg2.connect", return_value=fresh) as connect:
+    with patch("app.storage.postgres.psycopg2.connect", return_value=fresh) as connect:
         with client.session():
             pass
         connect.assert_called_once()
@@ -49,7 +49,7 @@ def test_reconnects_before_session(client, closed):
 def test_failed_session_propagates_without_retry(client):
     conn = MagicMock(closed=0)
     conn.__exit__.return_value = False
-    with patch("auditor_mcp.storage.postgres.psycopg2.connect", return_value=conn) as connect:
+    with patch("app.storage.postgres.psycopg2.connect", return_value=conn) as connect:
         with pytest.raises(ValueError, match="failed"), client.session():
             raise ValueError("failed")
         assert conn.__exit__.call_args.args[0] is ValueError

@@ -10,8 +10,8 @@ from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
-from auditor_mcp.models.audit import AuditEntry, Turn
-from auditor_mcp.services import AuditService
+from app.models.audit import AuditEntry, Turn
+from app.services import AuditService
 
 
 def register_audit_tools(mcp: MCPServer, service: AuditService) -> None:

@@ -4,8 +4,8 @@
 entry point for Claude Desktop is the ``auditor-mcp`` script.
 """
 
-from auditor_mcp.logging_setup import configure_logging
-from auditor_mcp.mcp.server import create_server
+from app.logging_setup import configure_logging
+from app.mcp.server import create_server
 
 configure_logging()
 mcp = create_server()

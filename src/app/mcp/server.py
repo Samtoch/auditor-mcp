@@ -4,18 +4,18 @@ import logging
 
 from mcp.server.mcpserver import MCPServer
 
-from auditor_mcp import __version__
-from auditor_mcp.config import Settings
-from auditor_mcp.services import AuditService
-from auditor_mcp.storage import JsonlAuditRepository
-from auditor_mcp.mcp.tools import register_audit_tools
+from app import __version__
+from app.config import Settings
+from app.services import AuditService
+from app.storage import JsonlAuditRepository
+from app.mcp.tools import register_audit_tools
 
 # Identity 
-from auditor_mcp.models import IdentitySettings
-from auditor_mcp.services.identity_service import IdentityService
+from app.models import IdentitySettings
+from app.services.identity_service import IdentityService
 
 # Database
-from auditor_mcp.storage import PostgresClient
+from app.storage import PostgresClient
 
 logger = logging.getLogger(__name__)
 

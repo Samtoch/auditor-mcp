@@ -37,7 +37,7 @@ from urllib.request import urlopen
 
 import jwt
 
-from auditor_mcp.models import IdentitySettings, VerifiedIdentity
+from app.models import IdentitySettings, VerifiedIdentity
 
 
 class IdentityService:

@@ -5,7 +5,7 @@ import logging
 import threading
 from pathlib import Path
 
-from auditor_mcp.models.audit import AuditEntry
+from app.models.audit import AuditEntry
 
 logger = logging.getLogger(__name__)
 

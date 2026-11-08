@@ -5,9 +5,9 @@ import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
 
-from auditor_mcp.models.audit import AuditEntry, EntryType, Turn
-from auditor_mcp.services.text import limit_words
-from auditor_mcp.storage import AuditRepository
+from app.models.audit import AuditEntry, EntryType, Turn
+from app.services.text import limit_words
+from app.storage import AuditRepository
 
 logger = logging.getLogger(__name__)
 

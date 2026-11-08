@@ -7,8 +7,8 @@ from urllib.error import URLError
 
 import pytest
 
-from auditor_mcp.models import IdentitySettings
-from auditor_mcp.services.identity_service import IdentityService
+from app.models import IdentitySettings
+from app.services.identity_service import IdentityService
 
 ISSUER = "https://login.microsoftonline.com/tenant-a/v2.0"
 KEYS = "https://login.microsoftonline.com/tenant-a/discovery/v2.0/keys"
@@ -26,8 +26,8 @@ def response(metadata):
 
 def test_discovers_keys_at_startup():
     with (
-        patch("auditor_mcp.services.identity_service.urlopen") as fetch,
-        patch("auditor_mcp.services.identity_service.jwt.PyJWKClient") as client,
+        patch("app.services.identity_service.urlopen") as fetch,
+        patch("app.services.identity_service.jwt.PyJWKClient") as client,
     ):
         fetch.return_value = response({"issuer": ISSUER, "jwks_uri": KEYS})
         IdentityService(settings())
@@ -47,7 +47,7 @@ def test_discovers_keys_at_startup():
 )
 def test_rejects_bad_metadata(metadata):
     with (
-        patch("auditor_mcp.services.identity_service.urlopen", return_value=response(metadata)),
+        patch("app.services.identity_service.urlopen", return_value=response(metadata)),
         pytest.raises(ValueError),
     ):
         IdentityService(settings())
@@ -55,13 +55,13 @@ def test_rejects_bad_metadata(metadata):
 
 def test_discovery_failure():
     with (
-        patch("auditor_mcp.services.identity_service.urlopen", side_effect=URLError("offline")),
+        patch("app.services.identity_service.urlopen", side_effect=URLError("offline")),
         pytest.raises(RuntimeError, match="Unable to load"),
     ):
         IdentityService(settings())
 
 
 def test_explicit_keys_skip_discovery():
-    with patch("auditor_mcp.services.identity_service.urlopen") as fetch:
+    with patch("app.services.identity_service.urlopen") as fetch:
         IdentityService(IdentitySettings(ISSUER, "moko", ("tenant-a",), KEYS))
         fetch.assert_not_called()

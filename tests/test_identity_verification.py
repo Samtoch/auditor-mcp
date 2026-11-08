@@ -7,8 +7,8 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from auditor_mcp.models import IdentitySettings, VerifiedIdentity
-from auditor_mcp.services.identity_service import IdentityService
+from app.models import IdentitySettings, VerifiedIdentity
+from app.services.identity_service import IdentityService
 
 
 @pytest.fixture
