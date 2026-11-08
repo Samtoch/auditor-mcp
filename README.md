@@ -15,18 +15,25 @@ auditor-mcp/
 ├── dev.py                   entry file for the MCP Inspector (mcp dev)
 ├── src/auditor_mcp/
 │   ├── __main__.py          entry point: `uv run auditor-mcp`
-│   ├── server.py            create_server(): wires everything together
+│   ├── api/                 reserved for website-facing API routes and app setup
+│   ├── mcp/
+│   │   ├── server.py        create_server(): wires the MCP interface together
+│   │   └── tools/           MCP tool definitions (thin layer over services)
 │   ├── config.py            Settings, read from AUDITOR_* env vars
 │   ├── logging_setup.py     diagnostic logging to stderr
-│   ├── models.py            AuditEntry, Turn, EntryType
-│   ├── storage/             persistence (AuditRepository + JSONL implementation)
-│   ├── services/            business rules (AuditService, word limit)
-│   └── tools/               MCP tool definitions (thin layer over services)
-└── tests/                   unit tests and in-process MCP client tests
+│   ├── models/              shared audit and identity data models
+│   ├── storage/             shared JSONL and PostgreSQL persistence
+│   └── services/            shared business rules and identity verification
+└── tests/                   unit tests
 ```
 
-Dependencies point one way: `tools → services → storage → models`. Only
-`tools/` and `server.py` import the MCP SDK.
+The interfaces are separate: `api/` is reserved for the website, and `mcp/`
+contains the AI-facing server and tools. There is no web API implementation yet.
+Both interfaces should call shared `services/`, which use `storage/` and
+`models/`. Services, storage, and models must not depend on either interface.
+Policy enforcement belongs in shared services so both interfaces apply the same rules.
+Only `mcp/` imports the MCP SDK. The existing `auditor-mcp` command and
+`dev.py` Inspector entry point continue to launch the MCP server.
 
 ## Setup
 
@@ -69,5 +76,7 @@ uv run mcp dev dev.py
 
 1. Put the rules in a service under `services/`, with unit tests.
 2. If it needs new storage, extend `AuditRepository` and the JSONL implementation.
-3. Expose it as tools in a new `tools/<feature>_tools.py` with a `register_*` function.
-4. Call that function from `create_server()` in `server.py`.
+3. Expose it as tools in a new `mcp/tools/<feature>_tools.py` with a `register_*` function.
+4. Call that function from `create_server()` in `mcp/server.py`.
+
+Website endpoints belong in `api/` and should call the same shared services.

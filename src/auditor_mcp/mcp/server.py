@@ -8,7 +8,7 @@ from auditor_mcp import __version__
 from auditor_mcp.config import Settings
 from auditor_mcp.services import AuditService
 from auditor_mcp.storage import JsonlAuditRepository
-from auditor_mcp.tools import register_audit_tools
+from auditor_mcp.mcp.tools import register_audit_tools
 
 # Identity 
 from auditor_mcp.models import IdentitySettings

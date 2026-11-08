@@ -5,6 +5,7 @@ description = "MCP server that keeps an audit log of conversation turns."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi[standard]>=0.162.2",
     "mcp[cli]>=2.3,<3",
     "msal>=1.39.0",
     "psycopg2-binary>=2.9.13",

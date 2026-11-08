@@ -5,7 +5,7 @@ import logging
 from auditor_mcp import __version__
 from auditor_mcp.config import Settings
 from auditor_mcp.logging_setup import configure_logging
-from auditor_mcp.server import create_server
+from auditor_mcp.mcp.server import create_server
 
 
 def main() -> None:
