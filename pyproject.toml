@@ -1,7 +1,7 @@
 [project]
 name = "auditor-mcp"
-version = "0.4.0"
-description = "MCP server that keeps an audit log of conversation turns."
+version = "0.5.0"
+description = "MCP audit server and security gateway that pins tool definitions against tool poisoning."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -10,10 +10,12 @@ dependencies = [
 
 [project.scripts]
 auditor-mcp = "auditor_mcp.__main__:main"
+auditor-gateway = "auditor_mcp.gateway.cli:main"
 
 [dependency-groups]
 dev = [
     "pytest>=8.3",
+    "pytest-timeout>=2.3",
     "ruff>=0.6",
 ]
 
@@ -27,6 +29,7 @@ packages = ["src/auditor_mcp"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+timeout = 60
 
 [tool.ruff]
 line-length = 100

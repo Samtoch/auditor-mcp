@@ -1,0 +1,20 @@
+# auditor-gateway configuration. Copy to gateway.toml and edit.
+# gateway.toml is git-ignored because it holds machine paths and may hold secrets.
+
+[gateway]
+state_dir = "state"          # pins.json: your tool approvals
+log_dir = "logs"             # gateway.jsonl: security event log
+call_timeout_seconds = 60
+
+# One [servers.<name>] table per downstream MCP server.
+# Names may contain letters, digits and hyphens (no underscores).
+# Tools appear to Claude as <name>__<tool>, e.g. weather__get_forecast.
+
+[servers.weather]
+command = "C:\\Users\\HP\\.local\\bin\\uv.exe"
+args = ["--directory", "C:\\pyProjects\\mcp-projects\\weather", "run", "weather.py"]
+
+# Downstream servers get a minimal environment, not the gateway's full one,
+# so your secrets aren't handed to third-party servers. Pass only what a
+# server needs:
+# env = { API_KEY = "..." }

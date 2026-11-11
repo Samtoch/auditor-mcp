@@ -15,3 +15,6 @@ wheels/
 
 # Audit logs contain conversation content
 logs/
+
+# Gateway config holds machine paths and may hold secrets
+gateway.toml
